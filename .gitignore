@@ -1,0 +1,12 @@
+data/
+*.pck
+env/
+*.txt
+*.json
+*.pck
+logs/
+__pycache__/
+image/
+model/
+score/
+
