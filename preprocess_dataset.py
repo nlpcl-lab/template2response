@@ -24,7 +24,11 @@ def process_dd():
         assert os.path.exists(raw_fname)
         with open(raw_fname, "r") as f:
             ls = [
-                [uttr.strip() for uttr in el.strip().split("__eou__") if len(uttr) != 0]
+                [
+                    uttr.strip()
+                    for uttr in el.strip().split("__eou__")
+                    if len(uttr) != 0
+                ]
                 for el in f.readlines()
             ]
         processed_data = []

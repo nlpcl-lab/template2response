@@ -9,4 +9,5 @@ __pycache__/
 image/
 model/
 score/
-
+scripts/
+generated/
