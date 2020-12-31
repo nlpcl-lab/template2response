@@ -379,7 +379,7 @@ if __name__ == "__main__":
                     best_dev_acc = dev_acc
                     torch.save(
                         {"args": args, "model": model.state_dict()},
-                        "ckpt/epoch%d_batch%d_acc_%.3f"
+                        "ckpt_persona/epoch%d_batch%d_acc_%.3f"
                         % (epoch, batches_processed, dev_acc),
                     )
 

@@ -12,3 +12,5 @@ score/
 scripts/
 generated/
 board_env/
+ckpt/
+ckpt_persona/
