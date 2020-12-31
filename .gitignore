@@ -11,3 +11,5 @@ model/
 score/
 scripts/
 generated/
+ckpt/
+ckpt_persona/
