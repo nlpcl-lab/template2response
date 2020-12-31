@@ -179,7 +179,7 @@ def main():
         "./generated/argmax_thd{}_valid.jsonl".format(args.threshold),
         "w"
         # "./generated/argmax_maskall_valid.jsonl",
-        "w",
+        # "w",
     ) as f:
         for line in dump_output:
             json.dump(line, f)

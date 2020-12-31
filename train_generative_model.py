@@ -23,6 +23,7 @@ from utils import (
     set_random_seed,
     get_logger,
     dump_config,
+    match_retrieved_response,
 )
 
 parser = argparse.ArgumentParser(
@@ -39,7 +40,14 @@ parser.add_argument(
 parser.add_argument(
     "--model",
     type=str,
-    choices=["gpt2", "transformer", "bart", "rtvNrfn", "proto"],
+    choices=[
+        "gpt2",
+        "transformer",
+        "bart",
+        "rtvNrfn",
+        "proto",
+        "gpt2_refine",
+    ],
 )
 
 parser.add_argument("--learning_rate", type=float, default=1e-4)
@@ -145,6 +153,9 @@ class GenerativeDataset(Dataset):
                 )
                 input_seq = your_persona + partner_persona + input_seq
 
+            if "refine" in self.model_name:
+                input_seq = item["retrieved"] + "[RTV]" + input_seq
+
             tokenized = self.tokenizer(
                 input_seq,
                 max_length=self.max_seq_len,
@@ -189,14 +200,14 @@ def main():
     Load Model
     """
     use_enc_dec = model_name in ["transformer", "bart"]
-    tgt_auto_shift = model_name in ["gpt2"]
+    tgt_auto_shift = model_name in ["gpt2", "gpt2_refine"]
 
     if model_name == "transformer":
         tokenizer, model = get_encdec_scratch()
     elif model_name == "bart":
         tokenizer = BartTokenizer.from_pretrained("facebook/bart-medium")
         model = BartModel.from_pretrained("facebook/bart-medium")
-    elif model_name == "gpt2":
+    elif model_name in ["gpt2", "gpt2_refine"]:
         tokenizer = AutoTokenizer.from_pretrained("gpt2")
         model = AutoModelForCausalLM.from_pretrained("gpt2")
     else:
@@ -208,6 +219,9 @@ def main():
         "[SEPT]",
     ]
     tokenizer.add_tokens(SPECIAL_TOKENS)
+    if "refine" in args.model:
+        tokenizer.add_tokens(["[RTV]"])
+
     if tokenizer.pad_token is None:
         tokenizer.add_special_tokens({"pad_token": "[PAD]"})
         tokenizer.pad_token = "[PAD]"
@@ -228,6 +242,19 @@ def main():
         get_processed_dataset(args.data_path.format(args.dataset, "train")),
         get_processed_dataset(args.data_path.format(args.dataset, "valid")),
     )
+
+    if args.model == "gpt2_refine":
+        train_raw = match_retrieved_response(
+            train_raw,
+            "./data/repr/{}/train_top_sorted.jsonl".format(args.dataset),
+            train_raw,
+        )
+        valid_raw = match_retrieved_response(
+            valid_raw,
+            "./data/repr/{}/valid_top_sorted.jsonl".format(args.dataset),
+            train_raw,
+        )
+
     logger.info("Train: {}\nValid:{}".format(len(train_raw), len(valid_raw)))
 
     train_dataset = GenerativeDataset(

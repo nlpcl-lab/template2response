@@ -102,3 +102,34 @@ def get_processed_dataset(fname):
         ls = [json.loads(el.strip()) for el in f.readlines()]
 
     return ls
+
+
+def get_mask_token_index(reply_len):
+    num_mask = int(np.random.randint(1, reply_len + 1, 1)[0])
+    ids = [_ for _ in range(reply_len)]
+    random.shuffle(ids)
+    return sorted(ids[:num_mask])
+
+
+def match_retrieved_response(original_dataset, match_map_fname, db_dataset):
+    with open(match_map_fname, "r") as f:
+        match_map = [json.loads(el.strip()) for el in f.readlines()]
+
+    assert len(original_dataset) == len(match_map)
+    for idx, line in enumerate(original_dataset):
+        retrived = match_map[idx]["qq"]  # [0]]["reply"]
+        save = [el for el in retrived if el != idx][0]
+        retrived = [
+            el
+            for retrieved_id, el in enumerate(retrived)
+            if abs(el - idx) > 3
+        ]
+        if len(retrived) == 0:
+            retrived = save
+        else:
+            retrived = retrived[0]
+        if idx == retrived:
+            raise ValueError
+        retrived = db_dataset[retrived]["reply"]
+        original_dataset[idx]["retrieved"] = retrived
+    return original_dataset

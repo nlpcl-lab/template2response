@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser(
     description="Configuration for template generation"
 )
 parser.add_argument(
-    "--dataset", type=str, default="persona", choices=["dd", "persona"]
+    "--dataset", type=str, default="dd", choices=["dd", "persona"]
 )
 parser.add_argument(
     "--lm_type",
@@ -241,6 +241,9 @@ def template_generation_parallel(
             score_list.append(float(convscore))
         elif scoring_method == "salience":
             score_list.append(float(convscore) - float(resscore))
+    print
+    print(score_list)
+
     return score_list
 
 

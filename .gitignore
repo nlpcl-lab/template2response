@@ -11,3 +11,4 @@ model/
 score/
 scripts/
 generated/
+board_env/
