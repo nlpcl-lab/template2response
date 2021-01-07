@@ -66,7 +66,7 @@ def set_random_seed(seed: int = 42):
 
 
 def get_encdec_scratch():
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
     # Initializing a BERT bert-base-uncased style configuration
     config = BertConfig()
     config.num_hidden_layers = 6
@@ -111,25 +111,23 @@ def get_mask_token_index(reply_len):
     return sorted(ids[:num_mask])
 
 
-def match_retrieved_response(original_dataset, match_map_fname, db_dataset):
+def match_retrieved_response(
+    original_dataset, match_map_fname, db_dataset, setup
+):
     with open(match_map_fname, "r") as f:
         match_map = [json.loads(el.strip()) for el in f.readlines()]
 
     assert len(original_dataset) == len(match_map)
+    same_counter = 0
     for idx, line in enumerate(original_dataset):
-        retrived = match_map[idx]["qq"]  # [0]]["reply"]
-        save = [el for el in retrived if el != idx][0]
-        retrived = [
-            el
-            for retrieved_id, el in enumerate(retrived)
-            if abs(el - idx) > 3
-        ]
-        if len(retrived) == 0:
-            retrived = save
-        else:
-            retrived = retrived[0]
-        if idx == retrived:
-            raise ValueError
-        retrived = db_dataset[retrived]["reply"]
-        original_dataset[idx]["retrieved"] = retrived
+        retrived: List[int] = match_map[idx][setup]  # [0]]["reply"]
+        for tmp in retrived:
+            retrieved_sentence = db_dataset[tmp]["reply"]
+            if retrieved_sentence == line["reply"]:
+                print("SAME!")
+                same_counter += 1
+                continue
+            retrieved = db_dataset[tmp]["reply"]
+        original_dataset[idx]["retrieved"] = retrieved
+    print(same_counter, len(original_dataset))
     return original_dataset

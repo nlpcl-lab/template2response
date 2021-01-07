@@ -1,5 +1,5 @@
 """
-Mask-Predict으로 생성을 하는 BERT를 학습해 boza
+Scoring Model (BERT) for span
 """
 import argparse
 import json
@@ -188,9 +188,8 @@ def main():
     """
     Load Model
     """
-    model = BertForMaskedLM.from_pretrained("bert-base-uncased")
-
-    tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+    model = BertForMaskedLM.from_pretrained("bert-base-cased")
+    tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
 
     SPECIAL_TOKENS = [
         "[PERSONA1]",

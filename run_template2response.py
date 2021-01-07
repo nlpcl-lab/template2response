@@ -32,12 +32,19 @@ parser.add_argument(
     default="./data/processed/{}/{}.jsonl",
 )
 
-parser.add_argument("--threshold", type=float, default=0.1)
+parser.add_argument("--threshold", type=float, default=0.5)
 parser.add_argument(
     "--decode_strategy",
     type=str,
     default="argmax_onestep",
     choices=["argmaxSequential"],
+)
+
+parser.add_argument(
+    "--similarity",
+    type=str,
+    default="qq",
+    choices=["qr", "qq"],
 )
 
 
@@ -87,14 +94,18 @@ def main():
         valid_dataset,
         "./data/repr/{}/valid_top_sorted.jsonl".format(args.dataset),
         train_dataset,
+        setup=args.similarity,
     )
     test_dataset = match_retrieved_response(
         test_dataset,
         "./data/repr/{}/test_top_sorted.jsonl".format(args.dataset),
         train_dataset,
+        setup=args.similarity,
     )
 
-    for dataset_idx, dataset in enumerate([valid_dataset, test_dataset]):
+    for dataset_idx, dataset in enumerate(
+        [test_dataset]
+    ):  # , valid_dataset]):
         final_output_list = []
         with torch.no_grad():
             for sample_index, sample in enumerate(dataset):
@@ -121,6 +132,10 @@ def main():
                         "[PERSONA2]".join(sample["parter_persona"])
                         + "[PERSONA2]"
                     )
+                    final_output_bag["context"] = [
+                        your_persona,
+                        partner_persona,
+                    ] + final_output_bag["context"]
                     context = your_persona + partner_persona + context
 
                 full_conv = context + retrieved_response
@@ -356,10 +371,14 @@ def main():
                 final_output_bag["context_output"] = result_w_con_score
                 final_output_bag["response_output"] = result_w_res_score
                 final_output_list.append(final_output_bag)
-        setname = "valid" if dataset_idx == 0 else "test"
+        setname = "test" if dataset_idx == 0 else "valid"
         with open(
-            "./generated/{}-thres{}-decode_{}_{}.jsonl".format(
-                args.dataset, args.threshold, args.decode_strategy, setname
+            "./generated/{}-thres{}-decode_{}_{}_{}.jsonl".format(
+                args.dataset,
+                args.threshold,
+                args.decode_strategy,
+                setname,
+                args.similarity,
             ),
             "w",
         ) as f:
