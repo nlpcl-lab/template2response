@@ -4,13 +4,25 @@ import string
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import numpy as np
 import torch
+import argparse
+from utils import get_mask_token_index
+
+parser = argparse.ArgumentParser(
+    description="Configuration for template generation"
+)
+parser.add_argument(
+    "--use_score", type=str, default="True", choices=["True", "False"]
+)
+
+args = parser.parse_args()
 
 score_absolute_threshold = 100
-
+args.use_score = True if args.use_score == "True" else False
 
 dataset_name = "dd"
-fname = "./generated/span4-{}-test_qr.jsonl".format(dataset_name)
+fname = "./generated/span3-{}-test_qr.jsonl".format(dataset_name)
 model_path = "./logs/gpt2_infill-{}/model/".format(dataset_name)
+print("/".join(model_path.split("/")[:-2]))
 
 with open(fname, "r") as f:
     dataset = [json.loads(el) for el in f.readlines()]
@@ -73,14 +85,23 @@ for item_idx, item in enumerate(dataset):
 
     def get_template(tokenized_response, span_score):
         # Likely span -> Unlikely span order
-        remain_span_score = [
-            el for el in span_score if el[2] > score_absolute_threshold
-        ]
         mask_list = [False for _ in range(len(tokenized_response))]
-        for span in remain_span_score:
-            mask_list[span[0] : span[1]] = [
-                True for _ in range(span[1] - span[0])
+        if args.use_score:
+            remain_span_score = [
+                el for el in span_score if el[2] > score_absolute_threshold
             ]
+
+            for span in remain_span_score:
+                mask_list[span[0] : span[1]] = [
+                    True for _ in range(span[1] - span[0])
+                ]
+        else:
+            masked_token_indices = get_mask_token_index(len(mask_list))
+            mask_list = [
+                True if idx in masked_token_indices else False
+                for idx in range(len(mask_list))
+            ]
+
         return [
             el if not mask_list[tok_idx] else "[MASK]"
             for tok_idx, el in enumerate(tokenized_response)
@@ -120,22 +141,43 @@ for item_idx, item in enumerate(dataset):
         bos_token_id=tokenizer(INFILL_TOKEN)["input_ids"][0],
         eos_token_id=tokenizer.eos_token_id,
         do_sampling=False,
-        # num_beams=5,
+        num_beams=5,
         max_length=512,
     )
 
     result = tokenizer.decode(result[0])
-    print(result)
-    input()
+
     dataset[item_idx]["generated"] = result
+
+    generated = result.split("[SEPT]")[-1]
+
+    template, decoded = generated.split("[SEP]")
+    decoded = decoded.replace("<|endoftext|>", "").strip()
+
+    print(template.count("[BLANK]") == decoded.count("[ANSWER]"))
+    decoded = [
+        el for el in decoded.split(ANSWER_TOKEN) if len(el.strip()) != 0
+    ]
+    for decoded_token in decoded:
+        template = template.replace(BLANK_TOKEN, " " + decoded_token, 1)
+    print(item_idx)
+    print(context)
+    print(result)
+    print(template)
+    print()
+    dataset[item_idx]["final_output"] = template
 
 
 import json
 
+if args.use_score:
+    title = "beam_pppl{}.jsonl".format(score_absolute_threshold)
+else:
+    title = "beam_random.jsonl"
+
+
 with open(
-    "/".join(model_path.split("/")[:-2])
-    + "/"
-    + "beam_pppl{}.jsonl".format(score_absolute_threshold),
+    "/".join(model_path.split("/")[:-2]) + "/" + title,
     "w",
 ) as f:
     for line in dataset:

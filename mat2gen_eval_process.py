@@ -81,4 +81,5 @@ def main_after_scoring():
 
 
 if __name__ == "__main__":
+    main_preprocess_for_scoring()
     main_after_scoring()

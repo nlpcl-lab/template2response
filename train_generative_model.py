@@ -102,7 +102,7 @@ class GenerativeDataset(Dataset):
 
             context, reply = (
                 item["context"],
-                item["reply"] + self.tokenizer.eos_token,
+                item["reply"],
             )
             context = "[SEPT]".join(context)
             if self.is_persona:
@@ -120,6 +120,7 @@ class GenerativeDataset(Dataset):
                 truncation=True,
                 return_tensors="pt",
             )
+
             reply = self.tokenizer(
                 reply,
                 max_length=self.max_seq_len,
@@ -129,8 +130,8 @@ class GenerativeDataset(Dataset):
             )
             enc_ids.append(context["input_ids"][0])
             enc_mask.append(context["attention_mask"][0])
-            dec_ids.append(context["input_ids"][0])
-            dec_mask.append(context["input_ids"][0])
+            dec_ids.append(reply["input_ids"][0])
+            dec_mask.append(reply["attention_mask"][0])
             tgt_id = list(reply["input_ids"][0].numpy())
             if not auto_shift:
                 tgt_id = tgt_id[1:] + [self.tokenizer.pad_token_id]
@@ -230,8 +231,7 @@ class GenerativeDataset(Dataset):
             attention_list = [1 for _ in range(len(ids_list))] + [
                 0 for _ in range(self.max_seq_len - len(ids_list))
             ]
-            print(self.tokenizer.decode(ids_list))
-            input(">>")
+
             input_seq = ids_list + [
                 self.tokenizer.pad_token_id
                 for _ in range(self.max_seq_len - len(ids_list))
@@ -255,8 +255,7 @@ class GenerativeDataset(Dataset):
         for idx, item in enumerate(dataset):
             if idx % 100 == 0:
                 print(f"{idx}/{len(dataset)}")
-            if idx == 100:
-                break
+
             context, reply = item["context"], item["reply"]
             input_seq = "[SEPT]".join(context) + "[SEPT]"
             if self.is_persona:
@@ -305,6 +304,11 @@ def main():
     device = torch.device("cuda")
     set_random_seed()
     model_name = args.model
+
+    if model_name == "transformer":
+        assert args.learning_rate == 1e-4
+    else:
+        assert args.learning_rate == 2e-5
 
     """
     Path definition

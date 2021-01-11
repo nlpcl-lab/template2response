@@ -124,7 +124,6 @@ def match_retrieved_response(
         for tmp in retrived:
             retrieved_sentence = db_dataset[tmp]["reply"]
             if retrieved_sentence == line["reply"]:
-                print("SAME!")
                 same_counter += 1
                 continue
             retrieved = db_dataset[tmp]["reply"]

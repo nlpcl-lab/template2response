@@ -27,25 +27,18 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--dataset", type=str, default="dd", choices=["dd", "persona"]
 )
-parser.add_argument("--max_span_length", type=int, default=4)
+parser.add_argument("--max_span_length", type=int, default=3)
 parser.add_argument(
     "--data_path",
     type=str,
     default="./data/processed/{}/{}.jsonl",
 )
 
-parser.add_argument("--threshold", type=float, default=0.5)
-parser.add_argument(
-    "--decode_strategy",
-    type=str,
-    default="argmax_onestep",
-    choices=["argmaxSequential"],
-)
 
 parser.add_argument(
     "--similarity",
     type=str,
-    default="qq",
+    default="qr",
     choices=["qr", "qq"],
 )
 

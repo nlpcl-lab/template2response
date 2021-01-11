@@ -14,3 +14,4 @@ generated/
 board_env/
 ckpt/
 ckpt_persona/
+model_generated/
